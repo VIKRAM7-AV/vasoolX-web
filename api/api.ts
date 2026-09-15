@@ -53,8 +53,14 @@ api.interceptors.response.use(
         
         const newAccessToken = res.data.accessToken;
         
+        const isProduction = process.env.NODE_ENV === "production";
+
         // 3. Update Cookies
-        Cookies.set("access_token", newAccessToken, { secure: true, sameSite: 'strict' });
+        Cookies.set("access_token", newAccessToken, { 
+          expires: 1, 
+          secure: isProduction, 
+          sameSite: "strict" 
+        });
         
         // Update header and retry
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
@@ -66,9 +72,12 @@ api.interceptors.response.use(
         Cookies.remove("access_token");
         Cookies.remove("refresh_token");
         
-        // In Next.js client-side, redirect to login
+        // In Next.js client-side, redirect to login route (/)
         if (typeof window !== "undefined") {
-            window.location.href = "/login"; // Or your login route
+            try {
+              localStorage.removeItem("admin_data");
+            } catch {}
+            window.location.href = "/";
         }
         
         return Promise.reject(refreshError);
