@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect, useMemo } from "react";
 import {
@@ -385,8 +385,8 @@ export default function AdminDashboard() {
             <div className="flex-1 overflow-auto custom-scrollbar min-h-0">
               <table className="border-collapse min-w-max text-sm">
                 {/* HEADERS */}
-                <thead className="bg-slate-50 text-xs font-semibold text-slate-500 uppercase sticky top-0 z-40 shadow-sm h-14">
-                  <tr>
+                <thead className="bg-slate-50 text-xs font-semibold text-slate-500 uppercase sticky top-0 z-40 shadow-sm h-12">
+                  <tr className="h-12">
                     {/* Fixed Columns: Use z-50 to stay on top of everything */}
                     <th className="sticky left-0 top-0 z-50 bg-white border-b border-r border-slate-300 w-12 text-center shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                       #
@@ -405,10 +405,10 @@ export default function AdminDashboard() {
                       return (
                         <th
                           key={i}
-                          style={{ width: 30, minWidth: 30 }}
-                          className={`border-b border-r border-slate-200 text-center hover:bg-slate-100 transition-colors ${isToday ? "bg-blue-50" : "bg-slate-50"}`}
+                          style={{ width: 40, minWidth: 40 }}
+                          className={`border-b border-r border-slate-200 text-center p-0 hover:bg-slate-100 transition-colors ${isToday ? "bg-blue-50" : "bg-slate-50"}`}
                         >
-                          <div className="flex flex-col items-center justify-center h-full">
+                          <div className="flex flex-col items-center justify-center w-12 h-8 aspect-square mx-auto">
                             <span className="text-[9px] leading-tight text-slate-400">
                               {date.toLocaleString("default", {
                                 month: "short",
@@ -527,8 +527,8 @@ export default function AdminDashboard() {
                                   className="border-r border-emerald-200 bg-emerald-50 text-center p-0 align-middle"
                                 >
                                   <div className="flex items-center justify-center h-full">
-                                    <span className="text-[8px] font-bold text-emerald-700 leading-none">
-                                      {compactAmt}
+                                    <span className="text-[10px] font-bold text-emerald-700 leading-none">
+                                      {payment.amount?.toLocaleString()}
                                     </span>
                                   </div>
                                 </td>
@@ -550,10 +550,10 @@ export default function AdminDashboard() {
                             return (
                               <td
                                 key={i}
-                                className="border-r border-rose-100 bg-rose-50/40 p-0 text-center"
+                                className="border-r border-rose-100 bg-rose-50 p-0 text-center"
                               >
                                 <div className="flex items-center justify-center h-full">
-                                  <X size={14} strokeWidth={3} className="text-rose-400" />
+                                  <X size={18} strokeWidth={3} className="text-rose-700" />
                                 </div>
                               </td>
                             );
@@ -570,13 +570,19 @@ export default function AdminDashboard() {
                           return (
                             <td
                               key={i}
-                              className="border-r border-slate-200 p-0 text-center relative hover:bg-white transition-colors cursor-pointer"
+                              className={`border-r border-slate-200 p-0 text-center relative transition-colors cursor-pointer ${
+                                status === "paid"
+                                  ? "bg-emerald-600 hover:bg-emerald-700"
+                                  : status === "pending"
+                                    ? "bg-amber-500 hover:bg-amber-600"
+                                    : "hover:bg-white"
+                              }`}
                             >
                               <div className="w-full h-full flex items-center justify-center">
                                 {/* PAID - Green Tick */}
                                 {status === "paid" && (
-                                  <div className="text-emerald-600">
-                                    <Check size={18} strokeWidth={4} />
+                                  <div className="text-white">
+                                    <Check size={22} strokeWidth={4} />
                                   </div>
                                 )}
 
@@ -587,9 +593,9 @@ export default function AdminDashboard() {
                                   </div>
                                 )}
 
-                                {/* PENDING - Yellow Dot */}
+                                {/* PENDING - White Dot on Amber Background */}
                                 {status === "pending" && (
-                                  <div className="w-3 h-3 rounded-full bg-amber-400 border-2 border-amber-200"></div>
+                                  <div className="w-2.5 h-2.5 rounded-full bg-white"></div>
                                 )}
 
                                 {/* FUTURE/NONE - Empty Dot */}
