@@ -12,6 +12,8 @@ import {
   PieChart,
   AlertOctagon,
   LogOut,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
@@ -64,15 +66,6 @@ const formatCurrency = (amount: number) => {
   }).format(amount || 0);
 };
 
-const formatCompactAmount = (amount: number) => {
-  if (!amount && amount !== 0) return "0";
-  if (amount >= 1000) {
-    const k = amount / 1000;
-    return `${Number(k.toFixed(2))}K`;
-  }
-  return `${amount}`;
-};
-
 const getDateString = (dateInput: Date | string) => {
   if (!dateInput) return "";
   const d = new Date(dateInput);
@@ -85,10 +78,14 @@ const addDays = (date: Date, days: number) => {
   return result;
 };
 
-// ==========================================
-// 3. STATS WIDGET (Compact Version)
-// ==========================================
-const MiniStat = ({ label, value, icon: Icon, color }: any) => {
+interface MiniStatProps {
+  label: string;
+  value: string;
+  icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>;
+  color: string;
+}
+
+const MiniStat = ({ label, value, icon: Icon, color }: MiniStatProps) => {
   // Use a static mapping so Tailwind can detect the color classes during build
   const colorMap: Record<string, string> = {
     "bg-emerald-500": "text-white",
@@ -96,18 +93,18 @@ const MiniStat = ({ label, value, icon: Icon, color }: any) => {
     "bg-rose-500": "text-white",
     "bg-blue-500": "text-white",
   };
-  const textColor = colorMap[color] || "text-slate-600";
+  const textColor = colorMap[color] || "text-slate-600 dark:text-slate-300";
 
   return (
-    <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-lg p-3 shadow-sm min-w-50">
-      <div className={`p-2 rounded-md ${color} bg-opacity-10`}>
+    <div className="flex items-center gap-3 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 rounded-lg p-3 shadow-sm min-w-50 transition-colors">
+      <div className={`p-2 rounded-md ${color} bg-opacity-10 dark:bg-opacity-20`}>
         <Icon size={18} className={`${textColor}`} strokeWidth={2} />
       </div>
       <div>
-        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+        <p className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-400 tracking-wider">
           {label}
         </p>
-        <p className="text-base font-bold text-slate-800">{value}</p>
+        <p className="text-base font-bold text-slate-800 dark:text-white transition-colors">{value}</p>
       </div>
     </div>
   );
@@ -128,6 +125,35 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [userFilter, setUserFilter] = useState<"active" | "arrear">("active");
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+
+  // --- THEME SYNC ---
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("vasoolx_theme") as "light" | "dark" | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
+      if (savedTheme === "dark") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    } else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      setTheme("dark");
+      document.documentElement.classList.add("dark");
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+    if (nextTheme === "dark") {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("vasoolx_theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("vasoolx_theme", "light");
+    }
+  };
 
   // --- AUTH CHECK & SESSION GUARD ---
   useEffect(() => {
@@ -240,19 +266,19 @@ export default function AdminDashboard() {
     (wealth?.activePendingSum || 0) + (wealth?.arrearPendingSum || 0);
 
   return (
-    <div className="h-screen flex flex-col bg-slate-50 font-sans text-slate-900 overflow-hidden">
+    <div className="h-screen flex flex-col bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 overflow-hidden transition-colors duration-200">
       {/* --- HEADER: COMPACT STATS --- */}
-      <div className="flex-none bg-white border-b border-slate-200 px-4 py-3 shadow-sm z-20">
+      <div className="flex-none bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-3 shadow-sm z-20 transition-colors">
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="bg-indigo-600 p-2 rounded-lg">
+            <div className="bg-indigo-600 dark:bg-indigo-500 p-2 rounded-lg">
               <Calendar className="text-white" size={20} />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-slate-800 leading-tight">
+              <h1 className="text-lg font-bold text-slate-800 dark:text-white leading-tight">
                 Master Register
               </h1>
-              <p className="text-xs text-slate-500 font-medium">
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                 Vasool Tracker v1.0
               </p>
             </div>
@@ -286,13 +312,35 @@ export default function AdminDashboard() {
               />
             </div>
 
-            <button
-              onClick={() => setShowLogoutModal(true)}
-              title="Logout"
-              className="flex items-center gap-1.5 px-3 py-4.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-lg text-xs font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap active:scale-95"
-            >
-              <LogOut size={24} />
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Theme Toggle Button */}
+              <button
+                onClick={toggleTheme}
+                title={theme === "dark" ? "Switch to White Mode" : "Switch to Dark Mode"}
+                aria-label={theme === "dark" ? "Switch to White Mode" : "Switch to Dark Mode"}
+                className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-amber-400 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap active:scale-95"
+              >
+                {theme === "dark" ? (
+                  <>
+                    <Sun size={18} className="text-amber-400 transition-transform hover:rotate-45" />
+                  </>
+                ) : (
+                  <>
+                    <Moon size={18} className="text-indigo-600 transition-transform hover:-rotate-12" />
+                  </>
+                )}
+              </button>
+
+              {/* Logout Button */}
+              <button
+                onClick={() => setShowLogoutModal(true)}
+                title="Logout"
+                className="flex items-center gap-1.5 px-3 py-2 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50 rounded-lg text-xs font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap active:scale-95"
+              >
+                <LogOut size={18} />
+                <span className="hidden sm:inline font-semibold">Logout</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -300,11 +348,11 @@ export default function AdminDashboard() {
       {/* --- MAIN WORKSPACE --- */}
       <div className="flex-1 flex flex-col p-4 overflow-hidden min-h-0">
         {/* TOOLBAR (Attached to Table) */}
-        <div className="flex-none bg-white rounded-t-xl border border-b-0 border-slate-300 p-3 flex flex-col md:flex-row justify-between items-center gap-3 shadow-sm z-10">
+        <div className="flex-none bg-white dark:bg-slate-900 rounded-t-xl border border-b-0 border-slate-300 dark:border-slate-800 p-3 flex flex-col md:flex-row justify-between items-center gap-3 shadow-sm z-10 transition-colors">
           {/* Left: Booking-type tabs + Active/Arrear toggle */}
           <div className="flex items-center gap-2 self-start md:self-auto">
             {/* Booking type tabs */}
-            <div className="flex bg-slate-100 p-1 rounded-lg">
+            <div className="flex bg-slate-100 dark:bg-slate-800/80 p-1 rounded-lg">
               {(["10 weeks", "50 days", "100 days"] as const).map((tab) => (
                 <button
                   key={tab}
@@ -313,8 +361,8 @@ export default function AdminDashboard() {
                     px-4 py-1.5 rounded-md text-xs font-bold uppercase tracking-wide transition-all
                     ${
                       activeTab === tab
-                        ? "bg-white text-indigo-700 shadow-sm ring-1 ring-black/5"
-                        : "text-slate-500 hover:text-slate-700"
+                        ? "bg-white dark:bg-indigo-600 text-indigo-700 dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-0"
+                        : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                     }
                   `}
                 >
@@ -324,13 +372,13 @@ export default function AdminDashboard() {
             </div>
 
             {/* Active / Arrear toggle pill */}
-            <div className="flex bg-slate-100 p-1 rounded-lg">
+            <div className="flex bg-slate-100 dark:bg-slate-800/80 p-1 rounded-lg">
               <button
                 onClick={() => setUserFilter("active")}
                 className={`px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wide transition-all ${
                   userFilter === "active"
-                    ? "bg-emerald-500 text-white shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
+                    ? "bg-emerald-500 dark:bg-emerald-600 text-white shadow-sm"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                 }`}
               >
                 ✓ Active
@@ -339,8 +387,8 @@ export default function AdminDashboard() {
                 onClick={() => setUserFilter("arrear")}
                 className={`px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wide transition-all ${
                   userFilter === "arrear"
-                    ? "bg-rose-500 text-white shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
+                    ? "bg-rose-500 dark:bg-rose-600 text-white shadow-sm"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                 }`}
               >
                 ⚠ Arrear
@@ -349,34 +397,45 @@ export default function AdminDashboard() {
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-2 w-[50%]">
+          <div className="flex items-center gap-2 w-full md:w-[50%]">
             <div className="relative flex-1 md:w-64">
               <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none"
                 size={16}
               />
               <input
                 type="text"
-                placeholder="Search student / customer..."
-                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none text-sm font-medium"
+                placeholder="Search customer..."
+                className="w-full pl-9 pr-9 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none text-sm font-medium transition-colors"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  title="Clear search"
+                  aria-label="Clear search"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-200 rounded-md hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors cursor-pointer"
+                >
+                  <X size={15} />
+                </button>
+              )}
             </div>
           </div>
         </div>
 
         {/* --- EXCEL TABLE CONTAINER --- */}
-        <div className="flex-1 bg-white border border-slate-300 rounded-b-xl overflow-hidden shadow-sm relative flex flex-col min-h-0">
+        <div className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-b-xl overflow-hidden shadow-sm relative flex flex-col min-h-0 transition-colors">
           {loading ? (
             <div className="flex-1 flex flex-col items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-4"></div>
-              <p className="text-sm text-slate-500 font-medium">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 dark:border-indigo-400 mb-4"></div>
+              <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
                 Loading register data...
               </p>
             </div>
           ) : filteredUsers.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
+            <div className="flex-1 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
               <Filter size={48} className="mb-2 opacity-20" />
               <p>No records found for {activeTab}</p>
             </div>
@@ -385,16 +444,16 @@ export default function AdminDashboard() {
             <div className="flex-1 overflow-auto custom-scrollbar min-h-0">
               <table className="border-collapse min-w-max text-sm">
                 {/* HEADERS */}
-                <thead className="bg-slate-50 text-xs font-semibold text-slate-500 uppercase sticky top-0 z-40 shadow-sm h-12">
+                <thead className="bg-slate-50 dark:bg-slate-800/90 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase sticky top-0 z-40 shadow-sm h-12">
                   <tr className="h-12">
                     {/* Fixed Columns: Use z-50 to stay on top of everything */}
-                    <th className="sticky left-0 top-0 z-50 bg-white border-b border-r border-slate-300 w-12 text-center shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                    <th className="sticky left-0 top-0 z-50 bg-white dark:bg-slate-900 border-b border-r border-slate-300 dark:border-slate-800 w-12 text-center text-slate-600 dark:text-slate-300 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] transition-colors">
                       #
                     </th>
-                    <th className="sticky left-12 top-0 z-50 bg-white border-b border-r border-slate-300 w-56 text-left px-4 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                    <th className="sticky left-12 top-0 z-50 bg-white dark:bg-slate-900 border-b border-r border-slate-300 dark:border-slate-800 w-56 text-left px-4 text-slate-600 dark:text-slate-300 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] transition-colors">
                       Name Details
                     </th>
-                    <th className="sticky left-64 top-0 z-50 bg-white border-r border-slate-300 w-28 text-right px-4 shadow-[5px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                    <th className="sticky left-64 top-0 z-50 bg-white dark:bg-slate-900 border-b border-r border-slate-300 dark:border-slate-800 w-28 text-right px-4 text-slate-600 dark:text-slate-300 shadow-[5px_0_5px_-2px_rgba(0,0,0,0.1)] transition-colors">
                       Loan Info
                     </th>
 
@@ -406,20 +465,27 @@ export default function AdminDashboard() {
                         <th
                           key={i}
                           style={{ width: 40, minWidth: 40 }}
-                          className={`border-b border-r border-slate-200 text-center p-0 hover:bg-slate-100 transition-colors ${isToday ? "bg-blue-50" : "bg-slate-50"}`}
+                          className={`border-b border-r border-slate-200 dark:border-slate-800 text-center p-0 hover:bg-slate-100 dark:hover:bg-slate-800/70 transition-colors ${
+                            isToday
+                              ? "bg-blue-50 dark:bg-blue-950/40"
+                              : "bg-slate-50 dark:bg-slate-800/50"
+                          }`}
                         >
                           <div className="flex flex-col items-center justify-center w-12 h-8 aspect-square mx-auto">
-                            <span className="text-[9px] leading-tight text-slate-400">
+                            <span className="text-[9px] leading-tight text-slate-400 dark:text-slate-500">
                               {date.toLocaleString("default", {
                                 month: "short",
                               })}
                             </span>
                             <span
-                              className={`text-sm font-bold leading-tight ${isToday ? "text-blue-600" : "text-slate-700"}`}
+                              className={`text-sm font-bold leading-tight ${
+                                isToday
+                                  ? "text-blue-600 dark:text-blue-400"
+                                  : "text-slate-700 dark:text-slate-200"
+                              }`}
                             >
                               {date.getDate()}
                             </span>
-                            {/* <span className="text-[9px] leading-tight text-slate-400">{date.toLocaleString('default', { weekday: 'short' }).charAt(0)}</span> */}
                           </div>
                         </th>
                       );
@@ -428,7 +494,7 @@ export default function AdminDashboard() {
                 </thead>
 
                 {/* BODY */}
-                <tbody className="divide-y divide-slate-200 text-slate-700">
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
                   {filteredUsers.map((user, idx) => {
                     // Calc Installment
                     const divisor =
@@ -443,15 +509,15 @@ export default function AdminDashboard() {
                     return (
                       <tr
                         key={user._id}
-                        className="group hover:bg-blue-50/30 transition-colors h-12"
+                        className="group hover:bg-blue-50/30 dark:hover:bg-slate-800/40 transition-colors h-12"
                       >
                         {/* 1. S.NO (Fixed) */}
-                        <td className="sticky left-0 z-30 bg-white  border-r border-slate-200 text-center text-slate-400 font-mono text-xs shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                        <td className="sticky left-0 z-30 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 text-center text-slate-400 dark:text-slate-500 font-mono text-xs shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] transition-colors">
                           {idx + 1}
                         </td>
 
                         {/* 2. NAME (Fixed) */}
-                        <td className="sticky left-12 z-30 bg-white  border-r border-slate-200 px-4 py-2 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                        <td className="sticky left-12 z-30 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 px-4 py-2 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] transition-colors">
                           <div className="flex items-center gap-3">
                             <div
                               className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm
@@ -461,10 +527,10 @@ export default function AdminDashboard() {
                               {user.userId?.name?.charAt(0).toUpperCase()}
                             </div>
                             <div className="flex flex-col">
-                              <span className="font-bold text-slate-800 text-xs truncate w-32">
+                              <span className="font-bold text-slate-800 dark:text-slate-100 text-xs truncate w-32">
                                 {user.userId?.name}
                               </span>
-                              <span className="text-[10px] text-slate-400 font-mono">
+                              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
                                 {user.userId?.phone}
                               </span>
                             </div>
@@ -472,20 +538,20 @@ export default function AdminDashboard() {
                         </td>
 
                         {/* 3. LOAN (Fixed) */}
-                        <td className="sticky left-64 z-30 bg-white border-r border-slate-300 px-4 text-right shadow-[5px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                        <td className="sticky left-64 z-30 bg-white dark:bg-slate-900 border-r border-slate-300 dark:border-slate-800 px-4 text-right shadow-[5px_0_5px_-2px_rgba(0,0,0,0.1)] transition-colors">
                           {userFilter === "arrear" ? (
                             <>
-                              <div className="font-bold text-rose-600 text-xs">
+                              <div className="font-bold text-rose-600 dark:text-rose-400 text-xs">
                                 {formatCurrency(user.pendingAmount || 0)}
                               </div>
-                              <div className="text-[9px] text-slate-500">Pending</div>
+                              <div className="text-[9px] text-slate-500 dark:text-slate-400">Pending</div>
                             </>
                           ) : (
                             <>
-                              <div className="font-bold text-slate-800 text-xs">
+                              <div className="font-bold text-slate-800 dark:text-slate-100 text-xs">
                                 {formatCurrency(user.amount * 0.8)}
                               </div>
-                              <div className="text-[9px] text-slate-500">
+                              <div className="text-[9px] text-slate-500 dark:text-slate-400">
                                 Due: {installment}
                               </div>
                             </>
@@ -502,9 +568,9 @@ export default function AdminDashboard() {
                             return (
                               <td
                                 key={i}
-                                className="border-r border-slate-200 bg-slate-900 text-center p-0 align-middle"
+                                className="border-r border-slate-200 dark:border-slate-800 bg-slate-900 dark:bg-black/60 text-center p-0 align-middle"
                               >
-                                <span className="text-slate-500 font-bold">-</span>
+                                <span className="text-slate-500 dark:text-slate-600 font-bold">-</span>
                               </td>
                             );
                           }
@@ -519,16 +585,15 @@ export default function AdminDashboard() {
                             );
 
                             if (payment) {
-                              // Paid: show compact real amount (e.g. "1.5K", "2K", "500")
-                              const compactAmt = formatCompactAmount(payment.amount);
                               return (
                                 <td
                                   key={i}
-                                  className="border-r border-emerald-200 bg-emerald-50 text-center p-0 align-middle"
+                                  className="border-r border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-emerald-950/40 text-center p-0 align-middle"
                                 >
                                   <div className="flex items-center justify-center h-full">
-                                    <span className="text-[10px] font-bold text-emerald-700 leading-none">
+                                    <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 leading-none">
                                       {payment.amount?.toLocaleString()}
+
                                     </span>
                                   </div>
                                 </td>
@@ -538,9 +603,9 @@ export default function AdminDashboard() {
                             // After booking ended → empty (no longer applicable)
                             if (endingDateStr && colDateStr > endingDateStr) {
                               return (
-                                <td key={i} className="border-r border-slate-200 p-0 text-center">
+                                <td key={i} className="border-r border-slate-200 dark:border-slate-800 p-0 text-center">
                                   <div className="flex items-center justify-center h-full">
-                                    <div className="w-1 h-1 rounded-full bg-slate-200"></div>
+                                    <div className="w-1 h-1 rounded-full bg-slate-200 dark:bg-slate-700"></div>
                                   </div>
                                 </td>
                               );
@@ -550,10 +615,10 @@ export default function AdminDashboard() {
                             return (
                               <td
                                 key={i}
-                                className="border-r border-rose-100 bg-rose-50 p-0 text-center"
+                                className="border-r border-rose-100 dark:border-rose-950/50 bg-rose-50 dark:bg-rose-950/30 p-0 text-center"
                               >
                                 <div className="flex items-center justify-center h-full">
-                                  <X size={18} strokeWidth={3} className="text-rose-700" />
+                                  <X size={18} strokeWidth={3} className="text-rose-700 dark:text-rose-400" />
                                 </div>
                               </td>
                             );
@@ -570,12 +635,12 @@ export default function AdminDashboard() {
                           return (
                             <td
                               key={i}
-                              className={`border-r border-slate-200 p-0 text-center relative transition-colors cursor-pointer ${
+                              className={`border-r border-slate-200 dark:border-slate-800 p-0 text-center relative transition-colors cursor-pointer ${
                                 status === "paid"
-                                  ? "bg-emerald-600 hover:bg-emerald-700"
+                                  ? "bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500"
                                   : status === "pending"
-                                    ? "bg-amber-500 hover:bg-amber-600"
-                                    : "hover:bg-white"
+                                    ? "bg-amber-500 hover:bg-amber-600 dark:bg-amber-500 dark:hover:bg-amber-400"
+                                    : "hover:bg-white dark:hover:bg-slate-800"
                               }`}
                             >
                               <div className="w-full h-full flex items-center justify-center">
@@ -588,7 +653,7 @@ export default function AdminDashboard() {
 
                                 {/* DUE - Red X */}
                                 {status === "due" && (
-                                  <div className="text-rose-500 opacity-80">
+                                  <div className="text-rose-500 dark:text-rose-400 opacity-80">
                                     <X size={18} strokeWidth={4} />
                                   </div>
                                 )}
@@ -600,7 +665,7 @@ export default function AdminDashboard() {
 
                                 {/* FUTURE/NONE - Empty Dot */}
                                 {status === "none" && (
-                                  <div className="w-1 h-1 rounded-full bg-slate-300"></div>
+                                  <div className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600"></div>
                                 )}
                               </div>
                             </td>
@@ -615,27 +680,27 @@ export default function AdminDashboard() {
           )}
 
           {/* TABLE FOOTER SUMMARY */}
-          <div className="bg-slate-50 border-t border-slate-300 p-2 text-xs text-slate-500 flex justify-between items-center z-20">
+          <div className="bg-slate-50 dark:bg-slate-900/90 border-t border-slate-300 dark:border-slate-800 p-2 text-xs text-slate-500 dark:text-slate-400 flex justify-between items-center z-20 transition-colors">
             <span>
               Showing {filteredUsers.length}{" "}
-              <span className={userFilter === "active" ? "text-emerald-600 font-semibold" : "text-rose-500 font-semibold"}>
+              <span className={userFilter === "active" ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-rose-500 dark:text-rose-400 font-semibold"}>
                 {userFilter === "active" ? "active" : "arrear"}
               </span>{" "}
               records
             </span>
             <div className="flex gap-4">
               <span className="flex items-center gap-1">
-                <Check size={12} className="text-emerald-600" /> Paid
+                <Check size={12} className="text-emerald-600 dark:text-emerald-400" /> Paid
               </span>
               <span className="flex items-center gap-1">
-                <X size={12} className="text-rose-500" /> Unpaid
+                <X size={12} className="text-rose-500 dark:text-rose-400" /> Unpaid
               </span>
               <span className="flex items-center gap-1">
                 <div className="w-2 h-2 rounded-full bg-amber-400"></div>{" "}
                 Pending
               </span>
               <span className="flex items-center gap-1">
-                <div className="w-4 h-4 bg-slate-900 flex items-center justify-center text-slate-500 text-[9px] rounded-sm">
+                <div className="w-4 h-4 bg-slate-900 dark:bg-black border border-slate-700 flex items-center justify-center text-slate-500 text-[9px] rounded-sm">
                   -
                 </div>{" "}
                 Not Started
@@ -647,16 +712,16 @@ export default function AdminDashboard() {
 
       {/* --- LOGOUT CONFIRMATION MODAL --- */}
       {showLogoutModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 flex flex-col items-center text-center animate-in zoom-in-95 duration-150">
-            <div className="w-14 h-14 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mb-4 border border-rose-100 shadow-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col items-center text-center animate-in zoom-in-95 duration-150">
+            <div className="w-14 h-14 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 rounded-full flex items-center justify-center mb-4 border border-rose-100 dark:border-rose-900/50 shadow-sm">
               <LogOut size={26} strokeWidth={2.5} />
             </div>
 
-            <h3 className="text-xl font-bold text-slate-900 mb-2">
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
               Confirm Logout
             </h3>
-            <p className="text-sm text-slate-500 mb-6 leading-relaxed">
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
               Are you sure you want to sign out from the Admin Portal? You will need to sign in again to access the dashboard.
             </p>
 
@@ -664,7 +729,7 @@ export default function AdminDashboard() {
               <button
                 type="button"
                 onClick={() => setShowLogoutModal(false)}
-                className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm rounded-xl transition-colors cursor-pointer"
+                className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-sm rounded-xl transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -679,23 +744,6 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
-
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f1f5f9;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #cbd5e1;
-          border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #94a3b8;
-        }
-      `}</style>
     </div>
   );
 }
