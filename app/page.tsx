@@ -72,15 +72,16 @@ const Login: FC<LoginProps> = ({ setAuth = () => {} }) => {
         // 3. Redirect
         router.replace("/admin");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Login error:", error);
       let errorMessage = "Login failed. Please try again.";
 
-      if (error.code === "ERR_NETWORK") {
+      const err = error as { code?: string; response?: { data?: { message?: string } } };
+      if (err?.code === "ERR_NETWORK") {
         errorMessage =
           "Cannot connect to server. Check your internet or if backend is running.";
-      } else if (error?.response?.data?.message) {
-        errorMessage = error.response.data.message;
+      } else if (err?.response?.data?.message) {
+        errorMessage = err.response.data.message;
       }
 
       setError(errorMessage);

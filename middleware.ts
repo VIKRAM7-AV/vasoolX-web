@@ -3,6 +3,12 @@ import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Skip middleware for all API routes, static files, and images
+  if (pathname.startsWith("/api")) {
+    return NextResponse.next();
+  }
+
   const accessToken = request.cookies.get("access_token")?.value;
 
   // Protected routes: /admin and any nested routes
